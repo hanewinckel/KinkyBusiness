@@ -37,6 +37,9 @@ modelEarth2 <- earth(Number.of.Deaths~Attained.Age+Duration+Gender+Smoker.Status
                      glm = list(family = quasipoisson),
                      degree = 2
                      )
+plot(modelEarth2) #Show fit plots, including terms used
+plotmo(modelEarth2) #Show effect of predictors on poisson response
+plotmo(modelEarth2,inverse.func = log) #Show effect of predictors on relative rates - shows "kinks" in hinges
 
 ##GAM Model
 
@@ -46,6 +49,17 @@ modelGAM <- gam(Number.of.Deaths~Smoker.Status+Face.Amount.Band+Gender+
     family = quasipoisson,
     control = list(nthreads = 5)) #Your (physical) cores here
 
-#20mins
-print(b)
+plot(modelGAM,main = 'GAM - contour view')
+plot(modelGAM,scheme = 1)
+plot(modelGAM,scheme = 2,main = 'GAM - Heatmap View')
 
+#AttachPredictions 
+dat[,ModelEarth1ExpectedDth := predict(modelEarth1,newdata = dat,type = 'response')]
+dat[,ModelEarth2ExpectedDth := predict(modelEarth2,newdata = dat,type = 'response')]
+dat[,ModelGAMExpectedDth := predict(modelGAM,newdata = dat,type = 'response')]
+
+#Summarize Model Performance
+dat[,.(ModelEarth1ExpectedDth = sum(ModelEarth1ExpectedDth),Earth1AE = sum(Number.of.Deaths)/sum(ModelEarth1ExpectedDth),
+       ModelEarth2ExpectedDth = sum(ModelEarth2ExpectedDth),Earth2AE = sum(Number.of.Deaths)/sum(ModelEarth2ExpectedDth),
+       ModelGAMExpectedDth = sum(ModelGAMExpectedDth),GAMAE = sum(Number.of.Deaths)/sum(ModelGAMExpectedDth)),
+    by = testSet]
